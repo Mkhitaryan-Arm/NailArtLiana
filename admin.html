@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | NAIL ART LIANA</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+<div class="admin-shell">
+
+  <!-- LOGIN -->
+  <section id="loginPage" class="login-page">
+    <div class="login-card">
+      <div class="brand-mark">✿</div>
+      <p class="overline">NAIL ART LIANA</p>
+      <h1>Admin Panel</h1>
+      <p class="muted">Մուտք գործիր կառավարման համակարգ։</p>
+
+      <form id="loginForm">
+        <label for="password">Գաղտնաբառ</label>
+        <input
+          type="password"
+          id="password"
+          placeholder="Մուտքագրիր գաղտնաբառը"
+          required
+        >
+        <button type="submit" class="primary-button">Մուտք գործել</button>
+        <div id="loginMessage" class="message"></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dashboard" class="dashboard" hidden>
+
+    <header class="admin-header">
+      <div>
+        <p class="overline">NAIL ART LIANA</p>
+        <h1>Կառավարման վահանակ</h1>
+      </div>
+
+      <button id="logoutButton" class="secondary-button">
+        Դուրս գալ
+      </button>
+    </header>
+
+    <!-- STATISTICS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span>Բոլոր գրանցումները</span>
+        <strong id="totalBookings">0</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>Այսօրվա գրանցումները</span>
+        <strong id="todayBookings">0</strong>
+      </div>
+
+      <div class="stat-card">
+        <span>Փակված ժամերը</span>
+        <strong id="totalBlocks">0</strong>
+      </div>
+    </div>
+
+    <!-- BOOKINGS -->
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <p class="overline">APPOINTMENTS</p>
+          <h2>Գրանցումներ</h2>
+        </div>
+
+        <button id="refreshButton" class="secondary-button">
+          Թարմացնել ↻
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Անուն</th>
+              <th>Հեռախոս</th>
+              <th>Ծառայություն</th>
+              <th>Ամսաթիվ</th>
+              <th>Ժամ</th>
+              <th>Գործողություն</th>
+            </tr>
+          </thead>
+
+          <tbody id="bookingsTable">
+            <tr><td colspan="6">Բեռնվում է...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SERVICES MANAGEMENT -->
+    <section class="panel" id="servicesPanel">
+
+      <div class="panel-heading">
+        <div>
+          <p class="overline">SERVICE MANAGEMENT</p>
+          <h2>Ծառայությունների կառավարում</h2>
+          <p class="muted">
+            Ավելացրու ծառայություններ, փոխիր անուններն ու գները։
+          </p>
+        </div>
+
+        <span id="servicesCount" class="count">0</span>
+      </div>
+
+      <!-- ADD SERVICE -->
+      <div class="service-add-card">
+
+        <h3>+ Ավելացնել նոր ծառայություն</h3>
+
+        <form id="addServiceForm" class="service-form">
+
+          <div>
+            <label for="newServiceName">Ծառայության անուն</label>
+            <input
+              type="text"
+              id="newServiceName"
+              placeholder="Օրինակ՝ Ֆրենչ մատնահարդարում"
+              maxlength="100"
+              required
+            >
+          </div>
+
+          <div>
+            <label for="newServicePrice">Գին (դրամ)</label>
+            <input
+              type="number"
+              id="newServicePrice"
+              placeholder="5000"
+              min="0"
+              max="10000000"
+              step="1"
+              required
+            >
+          </div>
+
+          <div class="service-description-field">
+            <label for="newServiceDescription">Նկարագրություն</label>
+            <input
+              type="text"
+              id="newServiceDescription"
+              placeholder="Ծառայության կարճ նկարագրություն"
+              maxlength="500"
+            >
+          </div>
+
+          <button type="submit" class="primary-button">
+            Ավելացնել ծառայությունը
+          </button>
+
+        </form>
+
+        <div id="serviceAddMessage" class="message"></div>
+      </div>
+
+      <!-- SERVICES LIST -->
+      <div class="services-list-heading">
+        <h3>Բոլոր ծառայությունները</h3>
+        <button id="refreshServicesButton" class="secondary-button">
+          Թարմացնել ↻
+        </button>
+      </div>
+
+      <div id="servicesList" class="services-list">
+        <p class="muted">Բեռնվում է...</p>
+      </div>
+
+      <div id="servicesMessage" class="message"></div>
+
+    </section>
+
+    <!-- BLOCK TIME -->
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <p class="overline">TIME MANAGEMENT</p>
+          <h2>Փակել ժամ կամ օր</h2>
+        </div>
+      </div>
+
+      <p class="muted">
+        Ընտրիր ամսաթիվը և ժամը։ «Ամբողջ օրը» ընտրելու դեպքում այդ օրվա բոլոր ժամերը կփակվեն։
+      </p>
+
+      <div class="block-form">
+        <div>
+          <label for="blockDate">Ամսաթիվ</label>
+          <input type="date" id="blockDate">
+        </div>
+
+        <div>
+          <label for="blockTime">Ժամ</label>
+          <select id="blockTime">
+            <option value="*">Ամբողջ օրը</option>
+            <option value="10:00">10:00</option>
+            <option value="11:00">11:00</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+            <option value="17:00">17:00</option>
+            <option value="18:00">18:00</option>
+          </select>
+        </div>
+
+        <button id="blockButton" class="primary-button">
+          Փակել ժամը
+        </button>
+      </div>
+
+      <div id="blockMessage" class="message"></div>
+    </section>
+
+    <!-- BLOCKED TIMES -->
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <p class="overline">BLOCKED TIMES</p>
+          <h2>Փակված ժամեր</h2>
+        </div>
+
+        <span id="blocksCount" class="count">0</span>
+      </div>
+
+      <div id="blockedList" class="blocked-list">
+        <p class="muted">Փակված ժամեր չկան։</p>
+      </div>
+    </section>
+
+    <footer class="admin-footer">
+      © 2026 NAIL ART LIANA · Admin Panel
+    </footer>
+
+  </section>
+</div>
+
+<script src="admin.js"></script>
+</body>
+</html>

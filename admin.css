@@ -1,0 +1,352 @@
+
+:root {
+  --pink: #c66c85;
+  --pink-dark: #a94d68;
+  --pink-light: #f9eaf0;
+  --bg: #fff8fa;
+  --text: #38252d;
+  --muted: #806c74;
+  --border: #f0dce3;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", "Noto Sans Armenian", Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.admin-shell {
+  max-width: 1450px;
+  margin: auto;
+  padding: 35px 5%;
+}
+
+.login-page {
+  min-height: 90vh;
+  display: grid;
+  place-items: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 470px;
+  padding: 45px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 20px 60px #a45a7518;
+  text-align: center;
+}
+
+.brand-mark {
+  color: var(--pink);
+  font-size: 55px;
+}
+
+.overline {
+  color: var(--pink-dark);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 2.5px;
+  margin-bottom: 8px;
+}
+
+.login-card h1,
+.admin-header h1 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 38px;
+  margin-bottom: 10px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.login-card form {
+  text-align: left;
+  margin-top: 30px;
+}
+
+label {
+  display: block;
+  font-weight: 800;
+  font-size: 17px;
+  margin: 15px 0 8px;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 15px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fffafb;
+  color: var(--text);
+  font-size: 17px;
+  outline: none;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 3px #c66c851a;
+}
+
+.primary-button,
+.secondary-button,
+.delete-button {
+  border: 0;
+  border-radius: 9px;
+  min-height: 49px;
+  padding: 11px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 800;
+  transition: .2s;
+}
+
+.primary-button {
+  color: white;
+  background: var(--pink);
+}
+
+.primary-button:hover {
+  background: var(--pink-dark);
+}
+
+.secondary-button {
+  color: var(--pink-dark);
+  background: var(--pink-light);
+}
+
+.secondary-button:hover {
+  background: #f3d9e3;
+}
+
+.delete-button {
+  min-height: 38px;
+  padding: 7px 12px;
+  color: #a63c54;
+  background: #fce9ed;
+  font-size: 14px;
+}
+
+.login-card .primary-button {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.message {
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #b13f59;
+}
+
+.dashboard[hidden],
+.login-page[hidden] {
+  display: none !important;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 35px;
+}
+
+.admin-header h1 {
+  font-size: 40px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  padding: 25px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.stat-card span {
+  display: block;
+  font-size: 16px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.stat-card strong {
+  display: block;
+  font-size: 39px;
+  color: var(--pink-dark);
+  margin-top: 8px;
+}
+
+.panel {
+  padding: 28px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin-bottom: 25px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 22px;
+}
+
+.panel-heading h2 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 29px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 15px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 15px;
+}
+
+th {
+  color: var(--pink-dark);
+  font-size: 14px;
+  font-weight: 800;
+  background: #fff8fa;
+}
+
+td {
+  color: var(--text);
+}
+
+.block-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 17px;
+  margin-top: 15px;
+}
+
+.block-form .primary-button {
+  min-height: 54px;
+  margin-bottom: 0;
+}
+
+.count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 38px;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 50px;
+  background: var(--pink-light);
+  color: var(--pink-dark);
+  font-weight: 800;
+}
+
+.blocked-list {
+  display: grid;
+  gap: 12px;
+}
+
+.blocked-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fffafb;
+}
+
+.blocked-item strong {
+  font-size: 17px;
+}
+
+.blocked-item span {
+  display: block;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.admin-footer {
+  text-align: center;
+  padding: 25px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 750px) {
+  .admin-shell {
+    padding: 22px 4%;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .block-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-header {
+    align-items: flex-start;
+  }
+
+  .admin-header h1 {
+    font-size: 30px;
+  }
+
+  .panel {
+    padding: 20px 14px;
+  }
+
+  .panel-heading h2 {
+    font-size: 24px;
+  }
+
+  .login-card {
+    padding: 30px 22px;
+  }
+
+  .blocked-item {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
