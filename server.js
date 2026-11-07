@@ -714,3 +714,4 @@ if (!fs.existsSync(SERVICES_FILE)) {
 app.listen(PORT, () => {
   console.log(`NAIL ART LIANA running on port ${PORT}`);
 });
+}
