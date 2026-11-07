@@ -707,11 +707,13 @@ app.delete("/api/admin/blocks/:id", requireAdmin, (req, res) => {
 // -------------------------
 
 // Create services.json on first start
+// START SERVER
+
 if (!fs.existsSync(SERVICES_FILE)) {
   saveServices(DEFAULT_SERVICES);
 }
 
-app.listen(PORT, () => {
-  console.log(`NAIL ART LIANA running on port ${PORT}`);
+console.log("SERVER FILE STARTED");
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("SERVER IS RUNNING ON PORT " + PORT);
 });
-}
