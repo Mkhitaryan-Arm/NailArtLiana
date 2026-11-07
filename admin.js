@@ -1,11 +1,14 @@
+
 const API_BASE = "https://nailartliana-1.onrender.com";
 
 const $ = (id) => document.getElementById(id);
 
+// API
 async function api(url, options = {}) {
   const response = await fetch(`${API_BASE}${url}`, {
     ...options,
     credentials: "include",
+    cache: "no-store",
     headers: {
       ...(options.headers || {})
     }
@@ -20,6 +23,7 @@ async function api(url, options = {}) {
   return data;
 }
 
+// HELPERS
 function showMessage(elementId, message, isError = false) {
   const element = $(elementId);
   if (!element) return;
@@ -65,74 +69,102 @@ function categoryName(category) {
   return names[category] || "Մատնահարդարում";
 }
 
-function makeCell(text) {
+function makeCell(value) {
   const td = document.createElement("td");
-  td.textContent = text ?? "—";
+  td.textContent = value ?? "—";
   return td;
 }
 
+function setText(id, value) {
+  const element = $(id);
+  if (element) element.textContent = value;
+}
+
 // LOGIN
-$("loginForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
+if ($("loginForm")) {
+  $("loginForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-  const password = $("password").value.trim();
+    const password = $("password")?.value.trim();
 
-  try {
-    await api("/api/admin/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
-    });
+    if (!password) {
+      showMessage("loginMessage", "Մուտքագրիր գաղտնաբառը։", true);
+      return;
+    }
 
-    $("password").value = "";
-    showDashboard();
-  } catch (error) {
-    showMessage("loginMessage", error.message, true);
-  }
-});
+    try {
+      await api("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password })
+      });
+
+      if ($("password")) $("password").value = "";
+
+      showDashboard();
+    } catch (error) {
+      showMessage("loginMessage", error.message, true);
+    }
+  });
+}
 
 function showDashboard() {
-  $("loginPage").hidden = true;
-  $("dashboard").hidden = false;
+  if ($("loginPage")) $("loginPage").hidden = true;
+  if ($("dashboard")) $("dashboard").hidden = false;
+
   refreshAll();
 }
 
 function showLogin() {
-  $("dashboard").hidden = true;
-  $("loginPage").hidden = false;
+  if ($("dashboard")) $("dashboard").hidden = true;
+  if ($("loginPage")) $("loginPage").hidden = false;
 }
 
 // LOGOUT
-$("logoutButton").addEventListener("click", async () => {
-  try {
-    await api("/api/admin/logout", { method: "POST" });
-  } catch (error) {
-    console.error(error);
-  }
+if ($("logoutButton")) {
+  $("logoutButton").addEventListener("click", async () => {
+    try {
+      await api("/api/admin/logout", { method: "POST" });
+    } catch (error) {
+      console.error(error);
+    }
 
-  showLogin();
-});
+    showLogin();
+  });
+}
 
 // BOOKINGS
 async function loadBookings() {
   const data = await api("/api/admin/bookings");
-  const bookings = Array.isArray(data) ? data : data.bookings || [];
+
+  const bookings = Array.isArray(data)
+    ? data
+    : data.bookings || [];
 
   const tbody = $("bookingsTable");
+
+  if (!tbody) {
+    throw new Error("HTML-ում bookingsTable տարրը չի գտնվել։");
+  }
+
   tbody.replaceChildren();
 
-  $("totalBookings").textContent = bookings.length;
+  setText("totalBookings", bookings.length);
 
   const today = new Date().toLocaleDateString("en-CA", {
     timeZone: "Asia/Yerevan"
   });
 
-  const todayCount = bookings.filter(item => item.date === today).length;
-  $("todayBookings").textContent = todayCount;
+  const todayCount = bookings.filter(
+    item => item.date === today
+  ).length;
+
+  setText("todayBookings", todayCount);
 
   if (!bookings.length) {
     const row = document.createElement("tr");
     const cell = makeCell("Գրանցումներ դեռ չկան։");
+
     cell.colSpan = 6;
     row.appendChild(cell);
     tbody.appendChild(row);
@@ -140,7 +172,9 @@ async function loadBookings() {
   }
 
   bookings.sort((a, b) => {
-    return `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+    return `${a.date} ${a.time}`.localeCompare(
+      `${b.date} ${b.time}`
+    );
   });
 
   bookings.forEach(booking => {
@@ -162,9 +196,11 @@ async function loadBookings() {
       if (!confirm("Ջնջե՞լ այս գրանցումը։")) return;
 
       try {
-        await api(`/api/admin/bookings/${encodeURIComponent(booking.id)}`, {
-          method: "DELETE"
-        });
+        await api(
+          `/api/admin/bookings/${encodeURIComponent(booking.id)}`,
+          { method: "DELETE" }
+        );
+
         await loadBookings();
       } catch (error) {
         alert(error.message);
@@ -180,19 +216,30 @@ async function loadBookings() {
 // COURSE REGISTRATIONS
 async function loadCourseRegistrations() {
   const data = await api("/api/admin/course-registrations");
+
   const registrations = Array.isArray(data)
     ? data
     : data.registrations || [];
 
   const tbody = $("courseRegistrationsTable");
-  tbody.replaceChildren();
 
-  $("courseRegistrationsCount").textContent = registrations.length;
-  $("totalCourseRegistrations").textContent = registrations.length;
+  setText("courseRegistrationsCount", registrations.length);
+  setText("totalCourseRegistrations", registrations.length);
+
+  // Եթե HTML-ում աղյուսակը չկա, մնացած Admin-ը շարունակում է աշխատել։
+  if (!tbody) {
+    console.warn(
+      "courseRegistrationsTable չի գտնվել admin.html-ում։"
+    );
+    return;
+  }
+
+  tbody.replaceChildren();
 
   if (!registrations.length) {
     const row = document.createElement("tr");
     const cell = makeCell("Դասընթացների հայտեր դեռ չկան։");
+
     cell.colSpan = 6;
     row.appendChild(cell);
     tbody.appendChild(row);
@@ -238,12 +285,20 @@ async function loadCourseRegistrations() {
 // SERVICES
 async function loadServices() {
   const data = await api("/api/admin/services");
-  const services = Array.isArray(data) ? data : data.services || [];
+
+  const services = Array.isArray(data)
+    ? data
+    : data.services || [];
 
   const list = $("servicesList");
+
+  if (!list) {
+    throw new Error("HTML-ում servicesList տարրը չի գտնվել։");
+  }
+
   list.replaceChildren();
 
-  $("servicesCount").textContent = services.length;
+  setText("servicesCount", services.length);
 
   if (!services.length) {
     const empty = document.createElement("p");
@@ -272,8 +327,10 @@ async function loadServices() {
     const fields = document.createElement("div");
     fields.className = "service-edit-fields";
 
+    // CATEGORY
     const categoryField = document.createElement("div");
     const categoryLabel = document.createElement("label");
+
     categoryLabel.textContent = "Բաժին";
 
     const categorySelect = document.createElement("select");
@@ -284,26 +341,33 @@ async function loadServices() {
       ["courses", "Դասընթացներ"]
     ].forEach(([value, label]) => {
       const option = document.createElement("option");
+
       option.value = value;
       option.textContent = label;
+
       categorySelect.appendChild(option);
     });
 
     categorySelect.value = service.category || "manicure";
     categoryField.append(categoryLabel, categorySelect);
 
+    // NAME
     const nameField = document.createElement("div");
     const nameLabel = document.createElement("label");
+
     nameLabel.textContent = "Անուն";
 
     const nameInput = document.createElement("input");
     nameInput.type = "text";
     nameInput.maxLength = 100;
     nameInput.value = service.name || "";
+
     nameField.append(nameLabel, nameInput);
 
+    // PRICE
     const priceField = document.createElement("div");
     const priceLabel = document.createElement("label");
+
     priceLabel.textContent = "Գին (դրամ)";
 
     const priceInput = document.createElement("input");
@@ -312,8 +376,10 @@ async function loadServices() {
     priceInput.max = "10000000";
     priceInput.step = "1";
     priceInput.value = service.price ?? "";
+
     priceField.append(priceLabel, priceInput);
 
+    // DESCRIPTION
     const descriptionField = document.createElement("div");
     descriptionField.className = "service-description-field";
 
@@ -324,7 +390,11 @@ async function loadServices() {
     descriptionInput.type = "text";
     descriptionInput.maxLength = 500;
     descriptionInput.value = service.description || "";
-    descriptionField.append(descriptionLabel, descriptionInput);
+
+    descriptionField.append(
+      descriptionLabel,
+      descriptionInput
+    );
 
     fields.append(
       categoryField,
@@ -333,6 +403,7 @@ async function loadServices() {
       descriptionField
     );
 
+    // FOOTER
     const footer = document.createElement("div");
     footer.className = "service-admin-footer";
 
@@ -343,12 +414,17 @@ async function loadServices() {
     activeCheckbox.type = "checkbox";
     activeCheckbox.checked = service.active !== false;
 
-    activeLabel.append(activeCheckbox, document.createTextNode(" Ակտիվ է"));
+    activeLabel.append(
+      activeCheckbox,
+      document.createTextNode(" Ակտիվ է")
+    );
 
     const actions = document.createElement("div");
     actions.className = "service-admin-actions";
 
+    // SAVE
     const saveButton = document.createElement("button");
+
     saveButton.textContent = "Պահպանել";
     saveButton.className = "primary-button";
 
@@ -372,38 +448,54 @@ async function loadServices() {
       }
 
       try {
-        await api(`/api/admin/services/${encodeURIComponent(service.id)}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            category: categorySelect.value,
-            name,
-            price: Number(priceValue),
-            description,
-            active: activeCheckbox.checked
-          })
-        });
+        await api(
+          `/api/admin/services/${encodeURIComponent(service.id)}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              category: categorySelect.value,
+              name,
+              price: Number(priceValue),
+              description,
+              active: activeCheckbox.checked
+            })
+          }
+        );
 
-        showMessage("servicesMessage", "Փոփոխությունները պահպանվեցին։");
+        showMessage(
+          "servicesMessage",
+          "Փոփոխությունները պահպանվեցին։"
+        );
+
         await loadServices();
       } catch (error) {
         showMessage("servicesMessage", error.message, true);
       }
     });
 
+    // DELETE
     const deleteButton = document.createElement("button");
+
     deleteButton.textContent = "Ջնջել";
     deleteButton.className = "delete-button";
 
     deleteButton.addEventListener("click", async () => {
-      if (!confirm(`Ջնջե՞լ «${service.name}» ծառայությունը։`)) return;
+      if (!confirm(`Ջնջե՞լ «${service.name}» ծառայությունը։`)) {
+        return;
+      }
 
       try {
-        await api(`/api/admin/services/${encodeURIComponent(service.id)}`, {
-          method: "DELETE"
-        });
+        await api(
+          `/api/admin/services/${encodeURIComponent(service.id)}`,
+          { method: "DELETE" }
+        );
 
-        showMessage("servicesMessage", "Ծառայությունը ջնջվեց։");
+        showMessage(
+          "servicesMessage",
+          "Ծառայությունը ջնջվեց։"
+        );
+
         await loadServices();
       } catch (error) {
         showMessage("servicesMessage", error.message, true);
@@ -419,54 +511,74 @@ async function loadServices() {
 }
 
 // ADD SERVICE
-$("addServiceForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
+if ($("addServiceForm")) {
+  $("addServiceForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-  const category = $("newServiceCategory").value;
-  const name = $("newServiceName").value.trim();
-  const price = Number($("newServicePrice").value);
-  const description = $("newServiceDescription").value.trim();
+    const category = $("newServiceCategory")?.value;
+    const name = $("newServiceName")?.value.trim();
+    const price = Number($("newServicePrice")?.value);
+    const description = $("newServiceDescription")?.value.trim();
 
-  if (!name || !Number.isInteger(price) || price < 0) {
-    showMessage("serviceAddMessage", "Ստուգիր լրացված տվյալները։", true);
-    return;
-  }
+    if (!name || !Number.isInteger(price) || price < 0) {
+      showMessage(
+        "serviceAddMessage",
+        "Ստուգիր լրացված տվյալները։",
+        true
+      );
+      return;
+    }
 
-  try {
-    await api("/api/admin/services", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        category,
-        name,
-        price,
-        description
-      })
-    });
+    try {
+      await api("/api/admin/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category,
+          name,
+          price,
+          description
+        })
+      });
 
-    $("addServiceForm").reset();
-    showMessage("serviceAddMessage", "Հաջողությամբ ավելացվեց։");
-    await loadServices();
-  } catch (error) {
-    showMessage("serviceAddMessage", error.message, true);
-  }
-});
+      $("addServiceForm").reset();
+
+      showMessage(
+        "serviceAddMessage",
+        "Հաջողությամբ ավելացվեց։"
+      );
+
+      await loadServices();
+    } catch (error) {
+      showMessage("serviceAddMessage", error.message, true);
+    }
+  });
+}
 
 // BLOCKED TIMES
 async function loadBlocks() {
   const data = await api("/api/admin/blocks");
-  const blocks = Array.isArray(data) ? data : data.blocks || [];
 
-  $("blocksCount").textContent = blocks.length;
-  $("totalBlocks").textContent = blocks.length;
+  const blocks = Array.isArray(data)
+    ? data
+    : data.blocks || [];
+
+  setText("blocksCount", blocks.length);
+  setText("totalBlocks", blocks.length);
 
   const list = $("blockedList");
+
+  if (!list) {
+    throw new Error("HTML-ում blockedList տարրը չի գտնվել։");
+  }
+
   list.replaceChildren();
 
   if (!blocks.length) {
     const empty = document.createElement("p");
     empty.className = "muted";
     empty.textContent = "Փակված ժամեր չկան։";
+
     list.appendChild(empty);
     return;
   }
@@ -476,10 +588,14 @@ async function loadBlocks() {
     item.className = "blocked-item";
 
     const info = document.createElement("span");
+
     info.textContent =
-      `${formatDate(block.date)} · ${block.time === "*" ? "Ամբողջ օրը" : block.time}`;
+      `${formatDate(block.date)} · ${
+        block.time === "*" ? "Ամբողջ օրը" : block.time
+      }`;
 
     const deleteButton = document.createElement("button");
+
     deleteButton.textContent = "Բացել";
     deleteButton.className = "delete-button";
 
@@ -487,9 +603,11 @@ async function loadBlocks() {
       if (!confirm("Բացե՞լ այս ժամը։")) return;
 
       try {
-        await api(`/api/admin/blocks/${encodeURIComponent(block.id)}`, {
-          method: "DELETE"
-        });
+        await api(
+          `/api/admin/blocks/${encodeURIComponent(block.id)}`,
+          { method: "DELETE" }
+        );
+
         await loadBlocks();
       } catch (error) {
         alert(error.message);
@@ -502,46 +620,84 @@ async function loadBlocks() {
 }
 
 // ADD BLOCK
-$("blockButton").addEventListener("click", async () => {
-  const date = $("blockDate").value;
-  const time = $("blockTime").value;
+if ($("blockButton")) {
+  $("blockButton").addEventListener("click", async () => {
+    const date = $("blockDate")?.value;
+    const time = $("blockTime")?.value;
 
-  if (!date) {
-    showMessage("blockMessage", "Ընտրիր ամսաթիվը։", true);
-    return;
-  }
+    if (!date) {
+      showMessage("blockMessage", "Ընտրիր ամսաթիվը։", true);
+      return;
+    }
 
-  try {
-    await api("/api/admin/blocks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date, time })
-    });
+    try {
+      await api("/api/admin/blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, time })
+      });
 
-    showMessage("blockMessage", "Ժամը հաջողությամբ փակվեց։");
-    await loadBlocks();
-  } catch (error) {
-    showMessage("blockMessage", error.message, true);
-  }
-});
+      showMessage(
+        "blockMessage",
+        "Ժամը հաջողությամբ փակվեց։"
+      );
+
+      await loadBlocks();
+    } catch (error) {
+      showMessage("blockMessage", error.message, true);
+    }
+  });
+}
 
 // REFRESH
 async function refreshAll() {
-  try {
-    await Promise.all([
-      loadBookings(),
-      loadCourseRegistrations(),
-      loadServices(),
-      loadBlocks()
-    ]);
-  } catch (error) {
-    console.error(error);
-    alert("Չհաջողվեց բեռնել տվյալները։ Ստուգիր կապը սերվերի հետ։");
+  const tasks = [
+    ["Գրանցումներ", loadBookings],
+    ["Դասընթացների հայտեր", loadCourseRegistrations],
+    ["Ծառայություններ", loadServices],
+    ["Փակված ժամեր", loadBlocks]
+  ];
+
+  const results = await Promise.allSettled(
+    tasks.map(([, fn]) => fn())
+  );
+
+  const errors = results
+    .map((result, index) => {
+      if (result.status === "rejected") {
+        console.error(
+          `Սխալ (${tasks[index][0]}):`,
+          result.reason
+        );
+
+        return `${tasks[index][0]}: ${
+          result.reason?.message || "Անհայտ սխալ"
+        }`;
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+
+  if (errors.length) {
+    alert(
+      "Որոշ տվյալներ չհաջողվեց բեռնել։\n\n" +
+      errors.join("\n")
+    );
   }
 }
 
-$("refreshButton").addEventListener("click", refreshAll);
-$("refreshServicesButton").addEventListener("click", loadServices);
+// BUTTONS
+if ($("refreshButton")) {
+  $("refreshButton").addEventListener("click", refreshAll);
+}
+
+if ($("refreshServicesButton")) {
+  $("refreshServicesButton").addEventListener(
+    "click",
+    loadServices
+  );
+}
 
 // CHECK SESSION
 async function checkSession() {
@@ -554,6 +710,7 @@ async function checkSession() {
       showLogin();
     }
   } catch (error) {
+    console.error("Session check:", error);
     showLogin();
   }
 }
