@@ -393,14 +393,13 @@ function cookieOptions(req) {
     req.secure ||
     req.headers["x-forwarded-proto"] === "https";
 
-  return [
-    "Path=/",
-    "HttpOnly",
-    "SameSite=None",,  
-    "Max-Age=28800",
-    ...(secure ? ["Secure"] : [])
-  ].join("; ");
-}
+return [
+  "Path=/",
+  "HttpOnly",
+  "SameSite=None",
+  "Max-Age=28800",
+  ...(secure ? ["Secure"] : [])
+].join("; "); 
 
 app.post("/api/admin/login", (req, res) => {
   const password = process.env.ADMIN_PASSWORD;
