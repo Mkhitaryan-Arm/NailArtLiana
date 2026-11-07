@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff8fa">
   <title>Admin Dashboard | NAIL ART LIANA</title>
   <link rel="stylesheet" href="admin.css">
 </head>
@@ -21,12 +22,8 @@
 
       <form id="loginForm">
         <label for="password">Գաղտնաբառ</label>
-        <input
-          type="password"
-          id="password"
-          placeholder="Մուտքագրիր գաղտնաբառը"
-          required
-        >
+        <input type="password" id="password"
+          placeholder="Մուտքագրիր գաղտնաբառը" required>
         <button type="submit" class="primary-button">Մուտք գործել</button>
         <div id="loginMessage" class="message"></div>
       </form>
@@ -41,10 +38,7 @@
         <p class="overline">NAIL ART LIANA</p>
         <h1>Կառավարման վահանակ</h1>
       </div>
-
-      <button id="logoutButton" class="secondary-button">
-        Դուրս գալ
-      </button>
+      <button id="logoutButton" class="secondary-button">Դուրս գալ</button>
     </header>
 
     <!-- STATISTICS -->
@@ -53,12 +47,14 @@
         <span>Բոլոր գրանցումները</span>
         <strong id="totalBookings">0</strong>
       </div>
-
       <div class="stat-card">
         <span>Այսօրվա գրանցումները</span>
         <strong id="todayBookings">0</strong>
       </div>
-
+      <div class="stat-card">
+        <span>Դասընթացների հայտեր</span>
+        <strong id="totalCourseRegistrations">0</strong>
+      </div>
       <div class="stat-card">
         <span>Փակված ժամերը</span>
         <strong id="totalBlocks">0</strong>
@@ -72,7 +68,6 @@
           <p class="overline">APPOINTMENTS</p>
           <h2>Գրանցումներ</h2>
         </div>
-
         <button id="refreshButton" class="secondary-button">
           Թարմացնել ↻
         </button>
@@ -90,8 +85,37 @@
               <th>Գործողություն</th>
             </tr>
           </thead>
-
           <tbody id="bookingsTable">
+            <tr><td colspan="6">Բեռնվում է...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- COURSE REGISTRATIONS -->
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <p class="overline">COURSE REGISTRATIONS</p>
+          <h2>Դասընթացների հայտեր</h2>
+          <p class="muted">Այստեղ կհայտնվեն դասընթացներին գրանցված անձինք։</p>
+        </div>
+        <span id="courseRegistrationsCount" class="count">0</span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Անուն</th>
+              <th>Հեռախոս</th>
+              <th>Դասընթաց</th>
+              <th>Գին</th>
+              <th>Գրանցման ամսաթիվ</th>
+              <th>Գործողություն</th>
+            </tr>
+          </thead>
+          <tbody id="courseRegistrationsTable">
             <tr><td colspan="6">Բեռնվում է...</td></tr>
           </tbody>
         </table>
@@ -100,64 +124,56 @@
 
     <!-- SERVICES MANAGEMENT -->
     <section class="panel" id="servicesPanel">
-
       <div class="panel-heading">
         <div>
           <p class="overline">SERVICE MANAGEMENT</p>
           <h2>Ծառայությունների կառավարում</h2>
           <p class="muted">
-            Ավելացրու ծառայություններ, փոխիր անուններն ու գները։
+            Ավելացրու և խմբագրիր մատնահարդարման, ոտնահարդարման
+            ծառայություններն ու դասընթացները։
           </p>
         </div>
-
         <span id="servicesCount" class="count">0</span>
       </div>
 
       <!-- ADD SERVICE -->
       <div class="service-add-card">
-
-        <h3>+ Ավելացնել նոր ծառայություն</h3>
+        <h3>+ Ավելացնել նոր ծառայություն կամ դասընթաց</h3>
 
         <form id="addServiceForm" class="service-form">
 
           <div>
-            <label for="newServiceName">Ծառայության անուն</label>
-            <input
-              type="text"
-              id="newServiceName"
+            <label for="newServiceCategory">Բաժին</label>
+            <select id="newServiceCategory" required>
+              <option value="manicure">Մատնահարդարում</option>
+              <option value="pedicure">Ոտնահարդարում</option>
+              <option value="courses">Դասընթացներ</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="newServiceName">Անուն</label>
+            <input type="text" id="newServiceName"
               placeholder="Օրինակ՝ Ֆրենչ մատնահարդարում"
-              maxlength="100"
-              required
-            >
+              maxlength="100" required>
           </div>
 
           <div>
             <label for="newServicePrice">Գին (դրամ)</label>
-            <input
-              type="number"
-              id="newServicePrice"
-              placeholder="5000"
-              min="0"
-              max="10000000"
-              step="1"
-              required
-            >
+            <input type="number" id="newServicePrice"
+              placeholder="5000" min="0" max="10000000"
+              step="1" required>
           </div>
 
           <div class="service-description-field">
             <label for="newServiceDescription">Նկարագրություն</label>
-            <input
-              type="text"
-              id="newServiceDescription"
-              placeholder="Ծառայության կարճ նկարագրություն"
-              maxlength="500"
-            >
+            <input type="text" id="newServiceDescription"
+              placeholder="Կարճ նկարագրություն" maxlength="500">
           </div>
 
           <button type="submit" class="primary-button">
-            Ավելացնել ծառայությունը
+            Ավելացնել
           </button>
-
         </form>
 
         <div id="serviceAddMessage" class="message"></div>
@@ -165,7 +181,7 @@
 
       <!-- SERVICES LIST -->
       <div class="services-list-heading">
-        <h3>Բոլոր ծառայությունները</h3>
+        <h3>Բոլոր ծառայություններն ու դասընթացները</h3>
         <button id="refreshServicesButton" class="secondary-button">
           Թարմացնել ↻
         </button>
@@ -176,7 +192,6 @@
       </div>
 
       <div id="servicesMessage" class="message"></div>
-
     </section>
 
     <!-- BLOCK TIME -->
@@ -189,7 +204,8 @@
       </div>
 
       <p class="muted">
-        Ընտրիր ամսաթիվը և ժամը։ «Ամբողջ օրը» ընտրելու դեպքում այդ օրվա բոլոր ժամերը կփակվեն։
+        Ընտրիր ամսաթիվը և ժամը։ «Ամբողջ օրը» ընտրելու դեպքում
+        այդ օրվա բոլոր ժամերը կփակվեն։
       </p>
 
       <div class="block-form">
@@ -229,7 +245,6 @@
           <p class="overline">BLOCKED TIMES</p>
           <h2>Փակված ժամեր</h2>
         </div>
-
         <span id="blocksCount" class="count">0</span>
       </div>
 
