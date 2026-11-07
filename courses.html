@@ -1,0 +1,139 @@
+
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#fff8fa">
+  <title>Դասընթացներ | NAIL ART LIANA</title>
+  <meta name="description" content="NAIL ART LIANA — մատնահարդարման մասնագիտական դասընթացներ։">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Noto+Sans+Armenian:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="header">
+  <a href="index.html" class="logo">
+    <span class="logo-icon">✿</span>
+    <span>NAIL ART<small>LIANA BEAUTY STUDIO</small></span>
+  </a>
+
+  <nav>
+    <a href="index.html#manicure" data-i18n="navManicure">Մատնահարդարում</a>
+    <a href="index.html#pedicure" data-i18n="navPedicure">Ոտնահարդարում</a>
+    <a href="courses.html" data-i18n="navCourses">Դասընթացներ</a>
+  </nav>
+
+  <div class="header-actions">
+    <select id="language" aria-label="Language">
+      <option value="hy">Հայերեն</option>
+      <option value="ru">Русский</option>
+      <option value="en">English</option>
+    </select>
+    <a href="#courseRegistration" class="header-button">
+      <span data-i18n="register">Գրանցվել</span> ↗
+    </a>
+  </div>
+</header>
+
+<main>
+  <section class="courses-hero">
+    <div class="eyebrow" style="justify-content:center">
+      <span></span>
+      <span>NAIL ART LIANA ACADEMY</span>
+    </div>
+
+    <h1 data-i18n="heroTitle">Բացահայտիր քո <i>տաղանդը</i></h1>
+    <p data-i18n="heroText">
+      Սովորիր մատնահարդարման արվեստը և ձեռք բեր նոր մասնագիտական հմտություններ։
+    </p>
+  </section>
+
+  <section class="courses-section">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">
+          <span></span>
+          <span data-i18n="coursesEyebrow">OUR COURSES</span>
+        </div>
+        <h2 data-i18n="coursesTitle">Մեր դասընթացները</h2>
+      </div>
+      <p data-i18n="coursesSubtitle">Ընտրիր քեզ համապատասխան ծրագիրը։</p>
+    </div>
+
+    <div class="courses-grid" id="coursesGrid">
+      <p class="hint" data-i18n="loading">Բեռնվում է...</p>
+    </div>
+  </section>
+
+  <section class="course-form-section" id="courseRegistration">
+    <div class="course-form-description">
+      <div class="eyebrow">
+        <span></span>
+        <span>COURSE REGISTRATION</span>
+      </div>
+
+      <h2 data-i18n="formTitle">Սկսիր քո <i>նոր ճանապարհը։</i></h2>
+
+      <p data-i18n="formText">
+        Լրացրու հայտը, և մենք կկապվենք քեզ հետ՝ դասընթացի մանրամասները ներկայացնելու համար։
+      </p>
+
+      <a href="index.html" class="back-home" data-i18n="backHome">
+        ← Վերադառնալ գլխավոր էջ
+      </a>
+    </div>
+
+    <div class="course-form-card">
+      <h3 data-i18n="registerTitle">Դասընթացի գրանցում</h3>
+
+      <form id="courseForm">
+        <label for="courseName" data-i18n="nameLabel">Անուն</label>
+        <input
+          type="text"
+          id="courseName"
+          maxlength="80"
+          placeholder="Անուն Ազգանուն"
+          required
+        >
+
+        <label for="coursePhone" data-i18n="phoneLabel">Հեռախոս</label>
+        <input
+          type="tel"
+          id="coursePhone"
+          maxlength="30"
+          placeholder="+374 ..."
+          required
+        >
+
+        <label for="courseSelect" data-i18n="courseLabel">Ընտրիր դասընթացը</label>
+        <select id="courseSelect" required>
+          <option value="" data-i18n="chooseCourse">Ընտրել դասընթացը</option>
+        </select>
+
+        <button type="submit" class="course-submit" id="courseSubmit">
+          <span data-i18n="submit">Ուղարկել հայտը</span> ↗
+        </button>
+
+        <div id="courseMessage" class="course-message" role="status"></div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <a href="index.html" class="logo">
+    <span class="logo-icon">✿</span>
+    <span>NAIL ART<small>LIANA BEAUTY STUDIO</small></span>
+  </a>
+  <p data-i18n="footer">Գեղեցկությունը սկսվում է խնամքից։</p>
+  <span>© 2026 NAIL ART LIANA</span>
+</footer>
+
+<script src="courses.js"></script>
+</body>
+</html>
