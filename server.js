@@ -1,4 +1,3 @@
-
 require("dotenv").config();
 
 const express = require("express");
@@ -6,20 +5,22 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS SETTINGS
+// -------------------------
+// CORS
+// -------------------------
+
 const allowedOrigins = (process.env.FRONTEND_ORIGIN || "")
   .split(",")
-  .map(origin => origin.trim())
+  .map(origin => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
 allowedOrigins.push("http://localhost:3000");
 
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
+  const origin = String(req.headers.origin || "").replace(/\/$/, "");
 
   if (origin && allowedOrigins.includes(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
@@ -31,7 +32,6 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, OPTIONS"
   );
-
   res.setHeader(
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization"
@@ -44,24 +44,25 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.json({ limit: "100kb" }));
+app.use(express.static(path.join(__dirname, "public")));
 
+// -------------------------
+// FILES / DATABASE
+// -------------------------
 
 const BOOKINGS_FILE = path.join(__dirname, "bookings.json");
 const BLOCKS_FILE = path.join(__dirname, "blocked-slots.json");
 const SERVICES_FILE = path.join(__dirname, "services.json");
-
-app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
-
-const SLOTS = [
-  "10:00", "11:00", "12:00",
-  "13:00", "14:00", "15:00",
-  "16:00", "17:00", "18:00"
-];
+const COURSE_REGISTRATIONS_FILE = path.join(
+  __dirname,
+  "course-registrations.json"
+);
 
 const DEFAULT_SERVICES = [
   {
     id: "manicure",
+    category: "manicure",
     name: "Մատնահարդարում",
     price: null,
     description: "",
@@ -69,6 +70,7 @@ const DEFAULT_SERVICES = [
   },
   {
     id: "gel",
+    category: "manicure",
     name: "Գել լաք",
     price: null,
     description: "",
@@ -76,6 +78,7 @@ const DEFAULT_SERVICES = [
   },
   {
     id: "extension",
+    category: "manicure",
     name: "Եղունգների երկարացում",
     price: null,
     description: "",
@@ -83,9 +86,11 @@ const DEFAULT_SERVICES = [
   }
 ];
 
-// -------------------------
-// JSON DATABASE
-// -------------------------
+const SLOTS = [
+  "10:00", "11:00", "12:00",
+  "13:00", "14:00", "15:00",
+  "16:00", "17:00", "18:00"
+];
 
 function readJson(file, fallback = []) {
   try {
@@ -94,7 +99,8 @@ function readJson(file, fallback = []) {
       return fallback;
     }
 
-    return JSON.parse(fs.readFileSync(file, "utf8"));
+    const parsed = JSON.parse(fs.readFileSync(file, "utf8"));
+    return Array.isArray(parsed) ? parsed : fallback;
   } catch (error) {
     console.error("File read error:", file, error.message);
     return fallback;
@@ -121,12 +127,22 @@ function saveServices(services) {
   writeJson(SERVICES_FILE, services);
 }
 
+function getCourseRegistrations() {
+  return readJson(COURSE_REGISTRATIONS_FILE);
+}
+
+function saveCourseRegistrations(registrations) {
+  writeJson(COURSE_REGISTRATIONS_FILE, registrations);
+}
+
 // -------------------------
-// DATE VALIDATION
+// VALIDATION / HELPERS
 // -------------------------
 
 function validDate(date) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return false;
+  }
 
   const [year, month, day] = date.split("-").map(Number);
   const parsed = new Date(Date.UTC(year, month - 1, day));
@@ -161,6 +177,10 @@ function isUnavailable(date, time) {
   return isBooked(date, time) || isBlocked(date, time);
 }
 
+function cleanText(value, maxLength = 500) {
+  return String(value ?? "").trim().slice(0, maxLength);
+}
+
 // -------------------------
 // TELEGRAM
 // -------------------------
@@ -171,13 +191,17 @@ async function sendTelegram(booking) {
 
   if (!token || !chatId) return false;
 
-  const text = [
+  const message = [
     "💅 ՆՈՐ ԳՐԱՆՑՈՒՄ — NAIL ART LIANA",
     "",
     `👤 Անուն: ${booking.name}`,
     `📞 Հեռախոս: ${booking.phone}`,
     `💎 Ծառայություն: ${booking.service}`,
-    `💰 Գին: ${booking.servicePrice === null ? "Նշված չէ" : booking.servicePrice + " ֏"}`,
+    `💰 Գին: ${
+      booking.servicePrice === null
+        ? "Նշված չէ"
+        : booking.servicePrice + " ֏"
+    }`,
     `📅 Ամսաթիվ: ${booking.date}`,
     `🕒 Ժամ: ${booking.time}`
   ].join("\n");
@@ -190,10 +214,14 @@ async function sendTelegram(booking) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text
+          text: message
         })
       }
     );
+
+    if (!response.ok) {
+      console.error("Telegram API error:", await response.text());
+    }
 
     return response.ok;
   } catch (error) {
@@ -202,25 +230,69 @@ async function sendTelegram(booking) {
   }
 }
 
+async function sendCourseTelegram(registration) {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (!token || !chatId) return false;
+
+  const message = [
+    "🎓 ՆՈՐ ԴԱՍԸՆԹԱՑԻ ՀԱՅՏ — NAIL ART LIANA",
+    "",
+    `👤 Անուն: ${registration.name}`,
+    `📞 Հեռախոս: ${registration.phone}`,
+    `📚 Դասընթաց: ${registration.course}`,
+    `💰 Գին: ${
+      registration.coursePrice === null
+        ? "Նշված չէ"
+        : registration.coursePrice + " ֏"
+    }`
+  ].join("\n");
+
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${token}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message
+        })
+      }
+    );
+
+    if (!response.ok) {
+      console.error("Telegram course API error:", await response.text());
+    }
+
+    return response.ok;
+  } catch (error) {
+    console.error("Telegram course error:", error.message);
+    return false;
+  }
+}
+
 // -------------------------
-// CUSTOMER SERVICES
+// CUSTOMER: SERVICES
 // -------------------------
 
 app.get("/api/services", (req, res) => {
   const services = getServices()
-    .filter(service => service.active)
+    .filter(service => service.active !== false)
     .map(service => ({
       id: service.id,
+      category: service.category || "manicure",
       name: service.name,
       price: service.price,
-      description: service.description
+      description: service.description || ""
     }));
 
   res.json({ services });
 });
 
 // -------------------------
-// CUSTOMER SLOTS
+// CUSTOMER: SLOTS
 // -------------------------
 
 app.get("/api/slots", (req, res) => {
@@ -252,53 +324,31 @@ app.get("/api/slots", (req, res) => {
 });
 
 // -------------------------
-// CUSTOMER BOOKINGS
+// CUSTOMER: MANICURE BOOKINGS
 // -------------------------
 
 app.post("/api/bookings", async (req, res) => {
-  const {
-    name,
-    phone,
-    service,
-    date,
-    time,
-    language
-  } = req.body || {};
+  const name = cleanText(req.body?.name, 80);
+  const phone = cleanText(req.body?.phone, 30);
+  const serviceId = cleanText(req.body?.service, 100);
+  const date = String(req.body?.date || "");
+  const time = String(req.body?.time || "");
+  const language = req.body?.language;
 
   if (
-    typeof name !== "string" ||
-    typeof phone !== "string" ||
-    typeof service !== "string" ||
-    typeof date !== "string" ||
-    typeof time !== "string"
+    name.length < 2 ||
+    phone.length < 5 ||
+    !serviceId ||
+    !validDate(date) ||
+    !SLOTS.includes(time)
   ) {
     return res.status(400).json({
-      error: "Լրացրեք բոլոր դաշտերը։"
-    });
-  }
-
-  const cleanName = name.trim();
-  const cleanPhone = phone.trim();
-
-  if (
-    cleanName.length < 2 ||
-    cleanName.length > 80 ||
-    cleanPhone.length < 5 ||
-    cleanPhone.length > 30
-  ) {
-    return res.status(400).json({
-      error: "Ստուգեք մուտքագրված տվյալները։"
-    });
-  }
-
-  if (!validDate(date) || !SLOTS.includes(time)) {
-    return res.status(400).json({
-      error: "Սխալ տվյալներ։"
+      error: "Ստուգեք լրացված տվյալները։"
     });
   }
 
   const selectedService = getServices().find(
-    item => item.id === service && item.active
+    item => item.id === serviceId && item.active !== false
   );
 
   if (!selectedService) {
@@ -321,16 +371,14 @@ app.post("/api/bookings", async (req, res) => {
 
   const booking = {
     id: crypto.randomUUID(),
-    name: cleanName,
-    phone: cleanPhone,
+    name,
+    phone,
     service: selectedService.name,
     serviceId: selectedService.id,
-    servicePrice: selectedService.price,
+    servicePrice: selectedService.price ?? null,
     date,
     time,
-    language: ["hy", "ru", "en"].includes(language)
-      ? language
-      : "hy",
+    language: ["hy", "ru", "en"].includes(language) ? language : "hy",
     createdAt: new Date().toISOString()
   };
 
@@ -348,7 +396,71 @@ app.post("/api/bookings", async (req, res) => {
 });
 
 // -------------------------
-// ADMIN AUTH
+// CUSTOMER: COURSE REGISTRATION
+// -------------------------
+
+app.post("/api/course-registrations", async (req, res) => {
+  const name = cleanText(req.body?.name, 80);
+  const phone = cleanText(req.body?.phone, 30);
+  const course = cleanText(
+    req.body?.course || req.body?.courseName,
+    150
+  );
+
+  const rawPrice = req.body?.coursePrice ?? req.body?.price ?? null;
+  const coursePrice =
+    rawPrice === null || rawPrice === ""
+      ? null
+      : Number(rawPrice);
+
+  if (
+    name.length < 2 ||
+    phone.length < 5 ||
+    course.length < 2
+  ) {
+    return res.status(400).json({
+      error: "Ստուգեք լրացված տվյալները։"
+    });
+  }
+
+  if (
+    coursePrice !== null &&
+    (!Number.isSafeInteger(coursePrice) ||
+      coursePrice < 0 ||
+      coursePrice > 10000000)
+  ) {
+    return res.status(400).json({
+      error: "Սխալ դասընթացի գին։"
+    });
+  }
+
+  const registration = {
+    id: crypto.randomUUID(),
+    name,
+    phone,
+    course,
+    coursePrice,
+    language: ["hy", "ru", "en"].includes(req.body?.language)
+      ? req.body.language
+      : "hy",
+    createdAt: new Date().toISOString()
+  };
+
+  const registrations = getCourseRegistrations();
+  registrations.push(registration);
+  saveCourseRegistrations(registrations);
+
+  const telegramSent = await sendCourseTelegram(registration);
+
+  res.json({
+    ok: true,
+    registrationId: registration.id,
+    telegramSent
+  });
+});
+
+// -------------------------
+// ADMIN AUTH / SESSIONS
 // -------------------------
 
 const sessions = new Map();
@@ -359,7 +471,6 @@ function getCookie(req, name) {
 
   for (const cookie of cookies) {
     const [key, ...value] = cookie.trim().split("=");
-
     if (key === name) return value.join("=");
   }
 
@@ -370,19 +481,14 @@ function requireAdmin(req, res, next) {
   const token = getCookie(req, "nail_admin");
 
   if (!token) {
-    return res.status(401).json({
-      error: "Unauthorized"
-    });
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   const session = sessions.get(token);
 
   if (!session || session.expires < Date.now()) {
     sessions.delete(token);
-
-    return res.status(401).json({
-      error: "Unauthorized"
-    });
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
   next();
@@ -407,7 +513,7 @@ app.post("/api/admin/login", (req, res) => {
 
   if (!password) {
     return res.status(503).json({
-      error: "Ադմինի գաղտնաբառը կարգավորված չէ։"
+      error: "Ադմինի գաղտնաբառը կարգավորված չէ Render-ում։"
     });
   }
 
@@ -441,32 +547,103 @@ app.post("/api/admin/logout", requireAdmin, (req, res) => {
   const token = getCookie(req, "nail_admin");
   sessions.delete(token);
 
+  const secure =
+    req.secure ||
+    req.headers["x-forwarded-proto"] === "https";
+
   res.setHeader(
     "Set-Cookie",
-    "nail_admin=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0"
+    `nail_admin=; Path=/; HttpOnly; SameSite=None; Max-Age=0${secure ? "; Secure" : ""}`
   );
 
   res.json({ ok: true });
 });
 
 // -------------------------
-// ADMIN SERVICES
+// ADMIN: BOOKINGS
+// -------------------------
+
+app.get("/api/admin/bookings", requireAdmin, (req, res) => {
+  const bookings = getBookings();
+
+  bookings.sort((a, b) =>
+    `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`)
+  );
+
+  res.json({ bookings });
+});
+
+app.delete("/api/admin/bookings/:id", requireAdmin, (req, res) => {
+  const bookings = getBookings();
+  const filtered = bookings.filter(
+    booking => booking.id !== req.params.id
+  );
+
+  if (filtered.length === bookings.length) {
+    return res.status(404).json({
+      error: "Գրանցումը չի գտնվել։"
+    });
+  }
+
+  writeJson(BOOKINGS_FILE, filtered);
+  res.json({ ok: true });
+});
+
+// -------------------------
+// ADMIN: COURSE REGISTRATIONS
+// -------------------------
+
+app.get(
+  "/api/admin/course-registrations",
+  requireAdmin,
+  (req, res) => {
+    const registrations = getCourseRegistrations();
+
+    registrations.sort((a, b) =>
+      String(b.createdAt || "").localeCompare(
+        String(a.createdAt || "")
+      )
+    );
+
+    res.json({ registrations });
+  }
+);
+
+app.delete(
+  "/api/admin/course-registrations/:id",
+  requireAdmin,
+  (req, res) => {
+    const registrations = getCourseRegistrations();
+    const filtered = registrations.filter(
+      registration => registration.id !== req.params.id
+    );
+
+    if (filtered.length === registrations.length) {
+      return res.status(404).json({
+        error: "Դասընթացի հայտը չի գտնվել։"
+      });
+    }
+
+    saveCourseRegistrations(filtered);
+    res.json({ ok: true });
+  }
+);
+
+// -------------------------
+// ADMIN: SERVICES
 // -------------------------
 
 app.get("/api/admin/services", requireAdmin, (req, res) => {
-  res.json({
-    services: getServices()
-  });
+  res.json({ services: getServices() });
 });
 
-// ADD SERVICE
-
 app.post("/api/admin/services", requireAdmin, (req, res) => {
-  const name = String(req.body?.name || "").trim();
-  const description = String(req.body?.description || "").trim();
+  const name = cleanText(req.body?.name, 100);
+  const description = cleanText(req.body?.description, 500);
   const price = req.body?.price;
+  const category = String(req.body?.category || "manicure");
 
-  if (name.length < 2 || name.length > 100) {
+  if (name.length < 2) {
     return res.status(400).json({
       error: "Ծառայության անունը պետք է լինի 2-100 նիշ։"
     });
@@ -482,30 +659,31 @@ app.post("/api/admin/services", requireAdmin, (req, res) => {
     });
   }
 
+  if (!["manicure", "pedicure", "courses"].includes(category)) {
+    return res.status(400).json({
+      error: "Սխալ բաժին։"
+    });
+  }
+
   const services = getServices();
 
   const newService = {
     id: crypto.randomUUID(),
+    category,
     name,
     price,
-    description: description.slice(0, 500),
+    description,
     active: true
   };
 
   services.push(newService);
   saveServices(services);
 
-  res.json({
-    ok: true,
-    service: newService
-  });
+  res.json({ ok: true, service: newService });
 });
-
-// UPDATE SERVICE
 
 app.put("/api/admin/services/:id", requireAdmin, (req, res) => {
   const services = getServices();
-
   const index = services.findIndex(
     service => service.id === req.params.id
   );
@@ -519,12 +697,12 @@ app.put("/api/admin/services/:id", requireAdmin, (req, res) => {
   const oldService = services[index];
 
   const name = req.body?.name !== undefined
-    ? String(req.body.name).trim()
+    ? cleanText(req.body.name, 100)
     : oldService.name;
 
   const description = req.body?.description !== undefined
-    ? String(req.body.description).trim()
-    : oldService.description;
+    ? cleanText(req.body.description, 500)
+    : oldService.description || "";
 
   const price = req.body?.price !== undefined
     ? req.body.price
@@ -532,9 +710,13 @@ app.put("/api/admin/services/:id", requireAdmin, (req, res) => {
 
   const active = req.body?.active !== undefined
     ? req.body.active
-    : oldService.active;
+    : oldService.active !== false;
 
-  if (name.length < 2 || name.length > 100) {
+  const category = req.body?.category !== undefined
+    ? String(req.body.category)
+    : oldService.category || "manicure";
+
+  if (name.length < 2) {
     return res.status(400).json({
       error: "Սխալ ծառայության անուն։"
     });
@@ -557,27 +739,27 @@ app.put("/api/admin/services/:id", requireAdmin, (req, res) => {
     });
   }
 
+  if (!["manicure", "pedicure", "courses"].includes(category)) {
+    return res.status(400).json({
+      error: "Սխալ բաժին։"
+    });
+  }
+
   services[index] = {
     ...oldService,
+    category,
     name,
     price,
-    description: description.slice(0, 500),
+    description,
     active
   };
 
   saveServices(services);
-
-  res.json({
-    ok: true,
-    service: services[index]
-  });
+  res.json({ ok: true, service: services[index] });
 });
-
-// DELETE SERVICE
 
 app.delete("/api/admin/services/:id", requireAdmin, (req, res) => {
   const services = getServices();
-
   const filtered = services.filter(
     service => service.id !== req.params.id
   );
@@ -589,46 +771,11 @@ app.delete("/api/admin/services/:id", requireAdmin, (req, res) => {
   }
 
   saveServices(filtered);
-
   res.json({ ok: true });
 });
 
 // -------------------------
-// ADMIN BOOKINGS
-// -------------------------
-
-app.get("/api/admin/bookings", requireAdmin, (req, res) => {
-  const bookings = getBookings();
-
-  bookings.sort((a, b) => {
-    return `${a.date} ${a.time}`.localeCompare(
-      `${b.date} ${b.time}`
-    );
-  });
-
-  res.json({ bookings });
-});
-
-app.delete("/api/admin/bookings/:id", requireAdmin, (req, res) => {
-  const bookings = getBookings();
-
-  const filtered = bookings.filter(
-    booking => booking.id !== req.params.id
-  );
-
-  if (filtered.length === bookings.length) {
-    return res.status(404).json({
-      error: "Գրանցումը չի գտնվել։"
-    });
-  }
-
-  writeJson(BOOKINGS_FILE, filtered);
-
-  res.json({ ok: true });
-});
-
-// -------------------------
-// ADMIN BLOCKS
+// ADMIN: BLOCKED SLOTS
 // -------------------------
 
 app.get("/api/admin/blocks", requireAdmin, (req, res) => {
@@ -681,13 +828,11 @@ app.post("/api/admin/blocks", requireAdmin, (req, res) => {
   });
 
   writeJson(BLOCKS_FILE, blocks);
-
   res.json({ ok: true });
 });
 
 app.delete("/api/admin/blocks/:id", requireAdmin, (req, res) => {
   const blocks = getBlocks();
-
   const filtered = blocks.filter(
     block => block.id !== req.params.id
   );
@@ -699,16 +844,8 @@ app.delete("/api/admin/blocks/:id", requireAdmin, (req, res) => {
   }
 
   writeJson(BLOCKS_FILE, filtered);
-
   res.json({ ok: true });
 });
-
-// -------------------------
-// START SERVER
-// -------------------------
-
-// Create services.json on first start
-// START SERVER
 
 // -------------------------
 // START SERVER
@@ -718,7 +855,13 @@ if (!fs.existsSync(SERVICES_FILE)) {
   saveServices(DEFAULT_SERVICES);
 }
 
+// Ensure all JSON database files exist
+readJson(BOOKINGS_FILE);
+readJson(BLOCKS_FILE);
+readJson(COURSE_REGISTRATIONS_FILE);
+
 console.log("SERVER FILE STARTED");
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER IS RUNNING ON PORT " + PORT);
 });
