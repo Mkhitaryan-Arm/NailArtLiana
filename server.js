@@ -6,8 +6,45 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// CORS SETTINGS
+const allowedOrigins = (process.env.FRONTEND_ORIGIN || "")
+  .split(",")
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+allowedOrigins.push("http://localhost:3000");
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
+
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, OPTIONS"
+  );
+
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
+
+
 
 const BOOKINGS_FILE = path.join(__dirname, "bookings.json");
 const BLOCKS_FILE = path.join(__dirname, "blocked-slots.json");
@@ -359,7 +396,7 @@ function cookieOptions(req) {
   return [
     "Path=/",
     "HttpOnly",
-    "SameSite=Strict",
+    "SameSite=None",,  
     "Max-Age=28800",
     ...(secure ? ["Secure"] : [])
   ].join("; ");
