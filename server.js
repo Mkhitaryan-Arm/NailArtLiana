@@ -716,4 +716,4 @@ if (!fs.existsSync(SERVICES_FILE)) {
 console.log("SERVER FILE STARTED");
 app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER IS RUNNING ON PORT " + PORT);
-});
+});}
